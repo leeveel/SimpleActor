@@ -61,20 +61,24 @@ namespace ActorModel
             {
                 callChainId = Interlocked.Increment(ref idCounter);
                 needEqueue = true;
+                return;
             }
             else if (callChainId == curCallChainId)
             {
                 needEqueue = false;
                 return;
             }
-            //mulithread operate curCallChainId, so need lock
-            lock (Lockable)
+            //reading curCallChainId in mulithread environment (maybe Volatile.Read is no need ?)
+            long curChainId = Volatile.Read(ref curCallChainId);
+            if (curChainId > 0)
             {
-                long curChainId = Volatile.Read(ref curCallChainId);
-                if (curChainId > 0)
+                //make waitingMap to be atomic operation
+                lock (Lockable)
                 {
                     waitingMap.TryGetValue(curChainId, out var waiting);
                     //Console.WriteLine($"curCallChainId:{curCallChainId} waitingCallChainId:{waiting?.curCallChainId}");
+                    //condition established only when relevant actors are waiting others
+                    //(curCallChainId is never be changed at the moment, maybe Volatile.Read is no need ?)
                     if (waiting != null && Volatile.Read(ref waiting.curCallChainId) == callChainId)
                     {
                         needEqueue = false;
@@ -85,10 +89,10 @@ namespace ActorModel
                         needEqueue = true;
                     }
                 }
-                else
-                {
-                    needEqueue = true;
-                }
+            }
+            else
+            {
+                needEqueue = true;
             }
         }
 

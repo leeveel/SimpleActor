@@ -82,7 +82,7 @@ namespace Test
             /***************************/
 
             var random = new Random();
-            for (int j = 0; j < 1000000; j++)
+            for (int j = 0; j < 100000; j++)
             {
                 for (int i = 0; i < 10; i++)
                 {

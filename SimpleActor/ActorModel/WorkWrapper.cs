@@ -15,7 +15,8 @@ namespace ActorModel
         protected void SetContext()
         {
             RuntimeContext.SetContext(CallChainId);
-            lock (Actor.Lockable)
+            //no need lock, only be modify at here(execute in actionblock single thread)
+            //lock (Actor.Lockable)
             {
                 Owner.curCallChainId = CallChainId;
             }
