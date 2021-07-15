@@ -24,6 +24,7 @@ namespace ActorModel
         public void ResetContext()
         {
             Actor.waitingMap.TryRemove(CallChainId, out _);
+            //no need reset context, just make sure setcontext before execute workitem 
             //lock (Owner.lockObj)
             //{
             //    DataFlowActor.waitingMap.TryRemove(CallChainId, out _);

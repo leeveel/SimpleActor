@@ -50,13 +50,12 @@ namespace ActorModel
             }
         }
 
-        private void IsNeedEqueue(bool allowCallChainReentrancy, out bool needEqueue, out long callChainId)
+        private void IsNeedEnqueue(bool forceEnqueue, out bool needEqueue, out long callChainId)
         {
             lock (Lockable)
             {
-                //needEqueue = false;
                 callChainId = RuntimeContext.Current;
-                if (!allowCallChainReentrancy)
+                if (forceEnqueue)
                 {
                     callChainId = Interlocked.Increment(ref idCounter);
                     needEqueue = true;
@@ -95,9 +94,19 @@ namespace ActorModel
             }
         }
 
-        public Task SendAsync(Action work, bool allowCallChainReentrancy = true, int timeOut = TIME_OUT)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="work"></param>
+        /// <param name="forceEnqueue">
+        /// means user not wait the result of Task (such as: _ = actor.SendAsync)
+        /// no difference whether you pass it or not when at the beginning of this call chain.
+        /// </param>
+        /// <param name="timeOut"></param>
+        /// <returns></returns>
+        public Task SendAsync(Action work, bool forceEnqueue = false, int timeOut = TIME_OUT)
         {
-            IsNeedEqueue(allowCallChainReentrancy, out bool needEqueue, out long callChainId);
+            IsNeedEnqueue(forceEnqueue, out bool needEqueue, out long callChainId);
             if (needEqueue)
             {
                 ActionWrapper at = new ActionWrapper(work);
@@ -115,9 +124,9 @@ namespace ActorModel
             }
         }
 
-        public Task<T> SendAsync<T>(Func<T> work, bool allowCallChainReentrancy = true, int timeOut = TIME_OUT)
+        public Task<T> SendAsync<T>(Func<T> work, bool forceEnqueue = false, int timeOut = TIME_OUT)
         {
-            IsNeedEqueue(allowCallChainReentrancy, out bool needEqueue, out long callChainId);
+            IsNeedEnqueue(forceEnqueue, out bool needEqueue, out long callChainId);
             if (needEqueue)
             {
                 FuncWrapper<T> at = new FuncWrapper<T>(work);
@@ -134,9 +143,9 @@ namespace ActorModel
             }
         }
 
-        public Task SendAsync(Func<Task> work, bool allowCallChainReentrancy = true, int timeOut = TIME_OUT)
+        public Task SendAsync(Func<Task> work, bool forceEnqueue = false, int timeOut = TIME_OUT)
         {
-            IsNeedEqueue(allowCallChainReentrancy, out bool needEqueue, out long callChainId);
+            IsNeedEnqueue(forceEnqueue, out bool needEqueue, out long callChainId);
             if (needEqueue)
             {
                 ActionAsyncWrapper at = new ActionAsyncWrapper(work);
@@ -153,9 +162,9 @@ namespace ActorModel
             }
         }
 
-        public Task<T> SendAsync<T>(Func<Task<T>> work, bool allowCallChainReentrancy = true, int timeOut = TIME_OUT)
+        public Task<T> SendAsync<T>(Func<Task<T>> work, bool forceEnqueue = false, int timeOut = TIME_OUT)
         {
-            IsNeedEqueue(allowCallChainReentrancy, out bool needEqueue, out long callChainId);
+            IsNeedEnqueue(forceEnqueue, out bool needEqueue, out long callChainId);
             if (needEqueue)
             {
                 FuncAsyncWrapper<T> at = new FuncAsyncWrapper<T>(work);

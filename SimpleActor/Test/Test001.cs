@@ -17,7 +17,10 @@ namespace Test
             var c = new Actor();
             var d = new Actor();
 
-            //single path a->b->a
+            /**********************/
+            /*  single path a->b->a  */
+            /*********************/
+
             //for (int i = 0; i < 10; i++)
             //{
             //    _ = a.SendAsync(async () =>
@@ -39,7 +42,10 @@ namespace Test
             //    });
             //}
 
-            //two path a->b; b->a
+            /**********************/
+            /* two path a->b; b->a  */
+            /*********************/
+
             //for (int i = 0; i < 10; i++)
             //{
             //    _ = a.SendAsync(async () =>
@@ -52,7 +58,7 @@ namespace Test
             //            id = Interlocked.Increment(ref id);
             //            Console.WriteLine("1 method b " + id);
             //        });
-            //    }, false);
+            //    }, true); // forceEnqueue: no difference whether you pass it or not when at the beginning of this call chain.
 
             //    _ = b.SendAsync(async () =>
             //    {
@@ -64,10 +70,14 @@ namespace Test
             //            id = Interlocked.Increment(ref id);
             //            Console.WriteLine("2 method a " + id);
             //        });
-            //    }, false);
+            //    });
             //}
 
-            //multipath: b->c; b->a; a->b
+
+            /****************************/
+            /* multipath: b->c; b->a; a->b  */
+            /***************************/
+
             var random = new Random();
             for (int j = 0; j < 1000000; j++)
             {
@@ -83,7 +93,7 @@ namespace Test
                             await Task.Delay(random.Next(10, 30));
                             Console.WriteLine("1---method c end");
                         });
-                    }, false); //1
+                    }); //1 // forceEnqueue: no difference whether you pass it or not when at the beginning of this call chain.
 
                     _ = b.SendAsync(async () =>
                     {
@@ -94,7 +104,7 @@ namespace Test
                             Console.WriteLine("2---method a");
                             await Task.Delay(random.Next(10, 30));
                         });
-                    }, false);//2
+                    });//2
 
                     await Task.Delay(10);
                     _ = a.SendAsync(async () =>
@@ -105,7 +115,7 @@ namespace Test
                             Console.WriteLine("3---method b");
                             await Task.Delay(random.Next(1, 10));
                         });
-                    }, false);//3
+                    });//3
                 }
 
                 await Task.Delay(1500);
