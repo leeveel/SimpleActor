@@ -50,18 +50,11 @@ namespace ActorModel
             }
         }
 
-        private void IsNeedEnqueue(bool forceEnqueue, out bool needEqueue, out long callChainId)
+        private void IsNeedEnqueue(out bool needEqueue, out long callChainId)
         {
             lock (Lockable)
             {
                 callChainId = RuntimeContext.Current;
-                if (forceEnqueue)
-                {
-                    callChainId = Interlocked.Increment(ref idCounter);
-                    needEqueue = true;
-                    return;
-                }
-
                 if (callChainId <= 0)
                 {
                     callChainId = Interlocked.Increment(ref idCounter);
@@ -106,8 +99,18 @@ namespace ActorModel
         /// <returns></returns>
         public Task SendAsync(Action work, bool forceEnqueue = false, int timeOut = TIME_OUT)
         {
-            IsNeedEnqueue(forceEnqueue, out bool needEqueue, out long callChainId);
-            if (needEqueue)
+            long callChainId;
+            bool needEnqueue;
+            if (forceEnqueue)
+            {
+                callChainId = Interlocked.Increment(ref idCounter);
+                needEnqueue = true;
+            }
+            else
+            {
+                IsNeedEnqueue(out needEnqueue, out callChainId);
+            }
+            if (needEnqueue)
             {
                 ActionWrapper at = new ActionWrapper(work);
                 at.Owner = this;
@@ -126,8 +129,18 @@ namespace ActorModel
 
         public Task<T> SendAsync<T>(Func<T> work, bool forceEnqueue = false, int timeOut = TIME_OUT)
         {
-            IsNeedEnqueue(forceEnqueue, out bool needEqueue, out long callChainId);
-            if (needEqueue)
+            long callChainId;
+            bool needEnqueue;
+            if (forceEnqueue)
+            {
+                callChainId = Interlocked.Increment(ref idCounter);
+                needEnqueue = true;
+            }
+            else
+            {
+                IsNeedEnqueue(out needEnqueue, out callChainId);
+            }
+            if (needEnqueue)
             {
                 FuncWrapper<T> at = new FuncWrapper<T>(work);
                 at.Owner = this;
@@ -145,8 +158,18 @@ namespace ActorModel
 
         public Task SendAsync(Func<Task> work, bool forceEnqueue = false, int timeOut = TIME_OUT)
         {
-            IsNeedEnqueue(forceEnqueue, out bool needEqueue, out long callChainId);
-            if (needEqueue)
+            long callChainId;
+            bool needEnqueue;
+            if (forceEnqueue)
+            {
+                callChainId = Interlocked.Increment(ref idCounter);
+                needEnqueue = true;
+            }
+            else
+            {
+                IsNeedEnqueue(out needEnqueue, out callChainId);
+            }
+            if (needEnqueue)
             {
                 ActionAsyncWrapper at = new ActionAsyncWrapper(work);
                 at.Owner = this;
@@ -164,8 +187,18 @@ namespace ActorModel
 
         public Task<T> SendAsync<T>(Func<Task<T>> work, bool forceEnqueue = false, int timeOut = TIME_OUT)
         {
-            IsNeedEnqueue(forceEnqueue, out bool needEqueue, out long callChainId);
-            if (needEqueue)
+            long callChainId;
+            bool needEnqueue;
+            if (forceEnqueue)
+            {
+                callChainId = Interlocked.Increment(ref idCounter);
+                needEnqueue = true;
+            }
+            else
+            {
+                IsNeedEnqueue(out needEnqueue, out callChainId);
+            }
+            if (needEnqueue)
             {
                 FuncAsyncWrapper<T> at = new FuncAsyncWrapper<T>(work);
                 at.Owner = this;
