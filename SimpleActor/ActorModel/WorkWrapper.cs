@@ -14,9 +14,9 @@ namespace ActorModel
         
         protected void SetContext()
         {
+            RuntimeContext.SetContext(CallChainId);
             lock (Actor.Lockable)
             {
-                RuntimeContext.SetContext(CallChainId);
                 Owner.curCallChainId = CallChainId;
             }
         }

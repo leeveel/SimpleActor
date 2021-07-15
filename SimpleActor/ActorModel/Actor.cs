@@ -8,9 +8,10 @@ namespace ActorModel
 {
     public class Actor
     {
-        public const int TIME_OUT = 3000;
+        public const int TIME_OUT = 10000;
         readonly ActionBlock<WorkWrapper> actionBlock;
 
+        //public static ReaderWriterLockSlim RwLock = new ReaderWriterLockSlim();
         public static object Lockable = new object();
         /// <summary>
         /// Actor当前正在执行的调用链
@@ -45,32 +46,36 @@ namespace ActorModel
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("wrapper time out:" + wrapper.GetTrace());
                 Console.ForegroundColor = ConsoleColor.Gray;
-                Console.Read(); //only for test (stop application when timeout)
+                Environment.Exit(0); //only for test (stop application when timeout)
                 wrapper.ForceSetResult();
             }
         }
 
         private void IsNeedEnqueue(out bool needEqueue, out long callChainId)
         {
+            //same call chain must be sigle thread
+            //multipath (callChainId == curCallChainId) not equal absolutly
+            // so no need lock
+            callChainId = RuntimeContext.Current;
+            if (callChainId <= 0)
+            {
+                callChainId = Interlocked.Increment(ref idCounter);
+                needEqueue = true;
+            }
+            else if (callChainId == curCallChainId)
+            {
+                needEqueue = false;
+                return;
+            }
+            //mulithread operate curCallChainId, so need lock
             lock (Lockable)
             {
-                callChainId = RuntimeContext.Current;
-                if (callChainId <= 0)
+                long curChainId = Volatile.Read(ref curCallChainId);
+                if (curChainId > 0)
                 {
-                    callChainId = Interlocked.Increment(ref idCounter);
-                    needEqueue = true;
-                }
-                else if (callChainId == curCallChainId)
-                {
-                    needEqueue = false;
-                    return;
-                }
-
-                if (curCallChainId > 0)
-                {
-                    waitingMap.TryGetValue(curCallChainId, out var waiting);
+                    waitingMap.TryGetValue(curChainId, out var waiting);
                     //Console.WriteLine($"curCallChainId:{curCallChainId} waitingCallChainId:{waiting?.curCallChainId}");
-                    if (waiting != null && waiting.curCallChainId == callChainId)
+                    if (waiting != null && Volatile.Read(ref waiting.curCallChainId) == callChainId)
                     {
                         needEqueue = false;
                     }

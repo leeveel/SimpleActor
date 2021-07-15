@@ -21,7 +21,7 @@ namespace Test
             /*  single path a->b->a  */
             /*********************/
 
-            //for (int i = 0; i < 10; i++)
+            //for (int i = 0; i < 1000; i++)
             //{
             //    _ = a.SendAsync(async () =>
             //    {
@@ -45,34 +45,37 @@ namespace Test
             /**********************/
             /* two path a->b; b->a  */
             /*********************/
-
-            //for (int i = 0; i < 10; i++)
+            //for (int j = 0; j < 1000; j++)
             //{
-            //    _ = a.SendAsync(async () =>
+            //    for (int i = 0; i < 100; i++)
             //    {
-            //        id = Interlocked.Increment(ref id);
-            //        Console.WriteLine("1 method a " + id);
-            //        await Task.Delay(1);
-            //        await b.SendAsync(() =>
+            //        _ = a.SendAsync(async () =>
             //        {
             //            id = Interlocked.Increment(ref id);
-            //            Console.WriteLine("1 method b " + id);
-            //        });
-            //    }, true); // forceEnqueue: no difference whether you pass it or not when at the beginning of this call chain.
+            //            Console.WriteLine("1 method a " + id);
+            //            await Task.Delay(1);
+            //            await b.SendAsync(() =>
+            //            {
+            //                id = Interlocked.Increment(ref id);
+            //                Console.WriteLine("1 method b " + id);
+            //            });
+            //        }, true); // forceEnqueue: no difference whether you pass it or not when at the beginning of this call chain.
 
-            //    _ = b.SendAsync(async () =>
-            //    {
-            //        id = Interlocked.Increment(ref id);
-            //        Console.WriteLine("2 method b " + id);
-            //        await Task.Delay(1);
-            //        await a.SendAsync(() =>
+            //        _ = b.SendAsync(async () =>
             //        {
             //            id = Interlocked.Increment(ref id);
-            //            Console.WriteLine("2 method a " + id);
+            //            Console.WriteLine("2 method b " + id);
+            //            await Task.Delay(1);
+            //            await a.SendAsync(() =>
+            //            {
+            //                id = Interlocked.Increment(ref id);
+            //                Console.WriteLine("2 method a " + id);
+            //            });
             //        });
-            //    });
+            //    }
+            //    await Task.Delay(5000);
+            //    Console.WriteLine("--------------------------------------------------:" + j);
             //}
-
 
             /****************************/
             /* multipath: b->c; b->a; a->b  */
