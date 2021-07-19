@@ -21,26 +21,26 @@ namespace Test
             /*  single path a->b->a  */
             /*********************/
 
-            //for (int i = 0; i < 1000; i++)
-            //{
-            //    _ = a.SendAsync(async () =>
-            //    {
-            //        id++;
-            //        Console.WriteLine("method a " + id);
-            //        await Task.Delay(1);
-            //        await b.SendAsync(async () =>
-            //        {
-            //            id++;
-            //            Console.WriteLine("method b " + id);
-            //            await Task.Delay(1);
-            //            await a.SendAsync(() =>
-            //            {
-            //                id++;
-            //                Console.WriteLine("method a back " + id);
-            //            });
-            //        });
-            //    });
-            //}
+            for (int i = 0; i < 1000; i++)
+            {
+                _ = a.SendAsync(async () =>
+                {
+                    id++;
+                    Console.WriteLine("method a " + id);
+                    await Task.Delay(1);
+                    await b.SendAsync(async () =>
+                    {
+                        id++;
+                        Console.WriteLine("method b " + id);
+                        await Task.Delay(1);
+                        await a.SendAsync(() =>
+                        {
+                            id++;
+                            Console.WriteLine("method a back " + id);
+                        });
+                    });
+                });
+            }
 
             /**********************/
             /* two path a->b; b->a  */
@@ -81,49 +81,49 @@ namespace Test
             /* multipath: b->c; b->a; a->b  */
             /***************************/
 
-            var random = new Random();
-            for (int j = 0; j < 100000; j++)
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    _ = b.SendAsync(async () =>
-                    {
-                        Console.WriteLine("1---method b");
-                        await Task.Delay(random.Next(1, 10));
-                        await c.SendAsync(async () =>
-                        {
-                            Console.WriteLine("1---method c");
-                            await Task.Delay(random.Next(10, 30));
-                            Console.WriteLine("1---method c end");
-                        });
-                    }); //1 // forceEnqueue: no difference whether you pass it or not when at the beginning of this call chain.
+            //var random = new Random();
+            //for (int j = 0; j < 100000; j++)
+            //{
+            //    for (int i = 0; i < 10; i++)
+            //    {
+            //        _ = b.SendAsync(async () =>
+            //        {
+            //            Console.WriteLine("1---method b");
+            //            await Task.Delay(random.Next(1, 10));
+            //            await c.SendAsync(async () =>
+            //            {
+            //                Console.WriteLine("1---method c");
+            //                await Task.Delay(random.Next(10, 30));
+            //                Console.WriteLine("1---method c end");
+            //            });
+            //        }); //1 // forceEnqueue: no difference whether you pass it or not when at the beginning of this call chain.
 
-                    _ = b.SendAsync(async () =>
-                    {
-                        Console.WriteLine("2---method b");
-                        await Task.Delay(random.Next(1, 10));
-                        await a.SendAsync(async () =>
-                        {
-                            Console.WriteLine("2---method a");
-                            await Task.Delay(random.Next(10, 30));
-                        });
-                    });//2
+            //        _ = b.SendAsync(async () =>
+            //        {
+            //            Console.WriteLine("2---method b");
+            //            await Task.Delay(random.Next(1, 10));
+            //            await a.SendAsync(async () =>
+            //            {
+            //                Console.WriteLine("2---method a");
+            //                await Task.Delay(random.Next(10, 30));
+            //            });
+            //        });//2
 
-                    await Task.Delay(10);
-                    _ = a.SendAsync(async () =>
-                    {
-                        Console.WriteLine("3---method a");
-                        await b.SendAsync(async () =>
-                        {
-                            Console.WriteLine("3---method b");
-                            await Task.Delay(random.Next(1, 10));
-                        });
-                    });//3
-                }
+            //        await Task.Delay(10);
+            //        _ = a.SendAsync(async () =>
+            //        {
+            //            Console.WriteLine("3---method a");
+            //            await b.SendAsync(async () =>
+            //            {
+            //                Console.WriteLine("3---method b");
+            //                await Task.Delay(random.Next(1, 10));
+            //            });
+            //        });//3
+            //    }
 
-                await Task.Delay(1500);
-                Console.WriteLine("--------------------------------------------------:" + j);
-            }
+            //    await Task.Delay(1500);
+            //    Console.WriteLine("--------------------------------------------------:" + j);
+            //}
 
 
         }

@@ -6,12 +6,18 @@ using System.Threading.Tasks.Dataflow;
 
 namespace ActorModel
 {
+
     public class Actor
     {
+
+        public class Setting
+        {
+            public static bool CheckDeadlock = true;
+        }
+
         public const int TIME_OUT = 10000;
         readonly ActionBlock<WorkWrapper> actionBlock;
 
-        //public static ReaderWriterLockSlim RwLock = new ReaderWriterLockSlim();
         public static object Lockable = new object();
         /// <summary>
         /// Actor当前正在执行的调用链
@@ -68,31 +74,26 @@ namespace ActorModel
                 needEqueue = false;
                 return;
             }
-            //reading curCallChainId in mulithread environment (maybe Volatile.Read is no need ?)
-            long curChainId = Volatile.Read(ref curCallChainId);
-            if (curChainId > 0)
+            needEqueue = true;
+            if (Setting.CheckDeadlock)
             {
-                //make waitingMap to be atomic operation
-                lock (Lockable)
+                long curChainId = Volatile.Read(ref curCallChainId);
+                if (curChainId > 0)
                 {
-                    waitingMap.TryGetValue(curChainId, out var waiting);
-                    //Console.WriteLine($"curCallChainId:{curCallChainId} waitingCallChainId:{waiting?.curCallChainId}");
-                    //condition established only when relevant actors are waiting others
-                    //(curCallChainId is never be changed at the moment, maybe Volatile.Read is no need ?)
-                    if (waiting != null && Volatile.Read(ref waiting.curCallChainId) == callChainId)
+                    lock (Lockable)
                     {
-                        needEqueue = false;
-                    }
-                    else
-                    {
-                        waitingMap[callChainId] = this;
-                        needEqueue = true;
+                        waitingMap.TryGetValue(curChainId, out var waiting);
+                        //Console.WriteLine($"curCallChainId:{curCallChainId} waitingCallChainId:{waiting?.curCallChainId}");
+                        if (waiting != null && Volatile.Read(ref waiting.curCallChainId) == callChainId)
+                        {
+                            throw new DeadlockException("multipath dead lock");
+                        }
+                        else
+                        {
+                            waitingMap[callChainId] = this;
+                        }
                     }
                 }
-            }
-            else
-            {
-                needEqueue = true;
             }
         }
 

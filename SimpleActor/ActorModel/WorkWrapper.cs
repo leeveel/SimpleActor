@@ -15,23 +15,12 @@ namespace ActorModel
         protected void SetContext()
         {
             RuntimeContext.SetContext(CallChainId);
-            //no need lock, only be modify at here(execute in actionblock single thread)
-            //lock (Actor.Lockable)
-            {
-                Owner.curCallChainId = CallChainId;
-            }
+            Owner.curCallChainId = CallChainId;
         }
 
         public void ResetContext()
         {
             Actor.waitingMap.TryRemove(CallChainId, out _);
-            //no need reset context, just make sure setcontext before execute workitem 
-            //lock (Owner.lockObj)
-            //{
-            //    DataFlowActor.waitingMap.TryRemove(CallChainId, out _);
-            //    Owner.curCallChainId = 0;
-            //    RuntimeContext.ResetContext();
-            //}
         }
     }
 
