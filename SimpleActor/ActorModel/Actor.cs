@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -10,11 +11,6 @@ namespace ActorModel
     public class Actor
     {
 
-        public class Setting
-        {
-            public static bool CheckDeadlock = true;
-        }
-
         public const int TIME_OUT = 10000;
         readonly ActionBlock<WorkWrapper> actionBlock;
 
@@ -23,7 +19,8 @@ namespace ActorModel
         /// Actor当前正在执行的调用链
         /// callchain id of actor current executing
         /// </summary>
-        public long curCallChainId;   
+        public long curCallChainId;
+        public volatile bool CurCanBeInterleaved;
         /// <summary>
         /// key:调用链 ---  value:正在等待的Actor
         /// key:callchainId ---- value:Actor of curreent callChain is waiting for
@@ -57,7 +54,7 @@ namespace ActorModel
             }
         }
 
-        private void IsNeedEnqueue(out bool needEqueue, out long callChainId)
+        private void IsNeedEnqueue(MethodInfo method, out bool needEnqueue, out long callChainId)
         {
             //same call chain must be sigle thread
             //multipath (callChainId == curCallChainId) not equal absolutly
@@ -66,32 +63,32 @@ namespace ActorModel
             if (callChainId <= 0)
             {
                 callChainId = Interlocked.Increment(ref idCounter);
-                needEqueue = true;
+                needEnqueue = true;
                 return;
             }
             else if (callChainId == curCallChainId)
             {
-                needEqueue = false;
+                needEnqueue = false;
                 return;
             }
-            needEqueue = true;
-            if (Setting.CheckDeadlock)
+            needEnqueue = true;
+            long curChainId = Volatile.Read(ref curCallChainId);
+            if (curChainId > 0)
             {
-                long curChainId = Volatile.Read(ref curCallChainId);
-                if (curChainId > 0)
+                lock (Lockable)
                 {
-                    lock (Lockable)
+                    waitingMap.TryGetValue(curChainId, out var waiting);
+                    //Console.WriteLine($"curCallChainId:{curCallChainId} waitingCallChainId:{waiting?.curCallChainId}");
+                    if (waiting != null && Volatile.Read(ref waiting.curCallChainId) == callChainId)
                     {
-                        waitingMap.TryGetValue(curChainId, out var waiting);
-                        //Console.WriteLine($"curCallChainId:{curCallChainId} waitingCallChainId:{waiting?.curCallChainId}");
-                        if (waiting != null && Volatile.Read(ref waiting.curCallChainId) == callChainId)
-                        {
-                            throw new DeadlockException("multipath dead lock");
-                        }
+                        if (CurCanBeInterleaved)
+                            needEnqueue = false;
                         else
-                        {
-                            waitingMap[callChainId] = this;
-                        }
+                            throw new DeadlockException("multi call chain dead lock");
+                    }
+                    else
+                    {
+                        waitingMap[callChainId] = this;
                     }
                 }
             }
@@ -118,7 +115,7 @@ namespace ActorModel
             }
             else
             {
-                IsNeedEnqueue(out needEnqueue, out callChainId);
+                IsNeedEnqueue(work.Method, out needEnqueue, out callChainId);
             }
             if (needEnqueue)
             {
@@ -148,7 +145,7 @@ namespace ActorModel
             }
             else
             {
-                IsNeedEnqueue(out needEnqueue, out callChainId);
+                IsNeedEnqueue(work.Method, out needEnqueue, out callChainId);
             }
             if (needEnqueue)
             {
@@ -177,7 +174,7 @@ namespace ActorModel
             }
             else
             {
-                IsNeedEnqueue(out needEnqueue, out callChainId);
+                IsNeedEnqueue(work.Method, out needEnqueue, out callChainId);
             }
             if (needEnqueue)
             {
@@ -206,7 +203,7 @@ namespace ActorModel
             }
             else
             {
-                IsNeedEnqueue(out needEnqueue, out callChainId);
+                IsNeedEnqueue(work.Method, out needEnqueue, out callChainId);
             }
             if (needEnqueue)
             {

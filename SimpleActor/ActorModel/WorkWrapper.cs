@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace ActorModel
@@ -11,11 +12,13 @@ namespace ActorModel
         public abstract string GetTrace();
         public abstract void ForceSetResult();
         public long CallChainId { get; set; }
+        public bool CanBeInterleaved { get; set; }
         
         protected void SetContext()
         {
             RuntimeContext.SetContext(CallChainId);
             Owner.curCallChainId = CallChainId;
+            Owner.CurCanBeInterleaved = CanBeInterleaved;
         }
 
         public void ResetContext()
@@ -32,6 +35,9 @@ namespace ActorModel
         public ActionWrapper(Action work)
         {
             this.Work = work;
+            var att = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock));
+            if (att != null)
+                CanBeInterleaved = true;
             Tcs = new TaskCompletionSource<bool>();
         }
 
@@ -74,6 +80,9 @@ namespace ActorModel
         public FuncWrapper(Func<T> work)
         {
             this.Work = work;
+            var att = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock));
+            if (att != null)
+                CanBeInterleaved = true;
             this.Tcs = new TaskCompletionSource<T>();
         }
 
@@ -117,6 +126,9 @@ namespace ActorModel
         public ActionAsyncWrapper(Func<Task> work)
         {
             this.Work = work;
+            var att = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock));
+            if (att != null)
+                CanBeInterleaved = true;
             Tcs = new TaskCompletionSource<bool>();
         }
 
@@ -158,6 +170,9 @@ namespace ActorModel
         public FuncAsyncWrapper(Func<Task<T>> work)
         {
             this.Work = work;
+            var att = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock));
+            if (att != null)
+                CanBeInterleaved = true;
             this.Tcs = new TaskCompletionSource<T>();
         }
 

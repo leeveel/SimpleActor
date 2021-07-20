@@ -7,39 +7,56 @@ namespace Test
 {
     public class Test001
     {
-
+        Actor a = new Actor();
+        Actor b = new Actor();
+        Actor c = new Actor();
+        Actor d = new Actor();
         private volatile int id = 0;
         public async Task Test()
         {
 
-            var a = new Actor();
-            var b = new Actor();
-            var c = new Actor();
-            var d = new Actor();
+           
 
             /**********************/
             /*  single path a->b->a  */
             /*********************/
 
-            for (int i = 0; i < 1000; i++)
+            //for (int i = 0; i < 1000; i++)
+            //{
+            //    _ = a.SendAsync(async () =>
+            //    {
+            //        id++;
+            //        Console.WriteLine("method a " + id);
+            //        await Task.Delay(1);
+            //        await b.SendAsync(async () =>
+            //        {
+            //            id++;
+            //            Console.WriteLine("method b " + id);
+            //            await Task.Delay(1);
+            //            await a.SendAsync(() =>
+            //            {
+            //                id++;
+            //                Console.WriteLine("method a back " + id);
+            //            });
+            //        });
+            //    });
+            //}
+
+            //多路死锁-通过交错属性-避免死锁
+            /*************************************/
+            /* two path a->b; b->a can be interleaved  */
+            /*************************************/
+            for (int j = 0; j < 1000; j++)
             {
-                _ = a.SendAsync(async () =>
+                for (int i = 0; i < 100; i++)
                 {
-                    id++;
-                    Console.WriteLine("method a " + id);
-                    await Task.Delay(1);
-                    await b.SendAsync(async () =>
-                    {
-                        id++;
-                        Console.WriteLine("method b " + id);
-                        await Task.Delay(1);
-                        await a.SendAsync(() =>
-                        {
-                            id++;
-                            Console.WriteLine("method a back " + id);
-                        });
-                    });
-                });
+                    // forceEnqueue: no difference whether you pass it [true] or not when at the beginning of this call chain.
+                    _ = a.SendAsync(InterleaveMethod_a, true); 
+                    //await Task.Delay(10);
+                    _ = b.SendAsync(InterleaveMethod_b);
+                }
+                await Task.Delay(5000);
+                Console.WriteLine("--------------------------------------------------:" + j);
             }
 
             /**********************/
@@ -126,6 +143,32 @@ namespace Test
             //}
 
 
+        }
+
+        [InterleaveWhenDeadlock]
+        private async Task InterleaveMethod_a()
+        {
+            id = Interlocked.Increment(ref id);
+            Console.WriteLine("1 method a " + id);
+            await Task.Delay(1);
+            await b.SendAsync(() =>
+            {
+                id = Interlocked.Increment(ref id);
+                Console.WriteLine("1 method b " + id);
+            });
+        }
+
+        [InterleaveWhenDeadlock]
+        private async Task InterleaveMethod_b()
+        {
+            id = Interlocked.Increment(ref id);
+            Console.WriteLine("2 method b " + id);
+            await Task.Delay(1);
+            await a.SendAsync(() =>
+            {
+                id = Interlocked.Increment(ref id);
+                Console.WriteLine("2 method b " + id);
+            });
         }
 
     }
