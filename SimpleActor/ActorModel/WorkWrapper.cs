@@ -21,7 +21,7 @@ namespace ActorModel
             Owner.CurCanBeInterleaved = CanBeInterleaved;
         }
 
-        public void ResetContext()
+        protected void ResetContext()
         {
             Actor.waitingMap.TryRemove(CallChainId, out _);
         }
@@ -35,9 +35,7 @@ namespace ActorModel
         public ActionWrapper(Action work)
         {
             this.Work = work;
-            var att = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock));
-            if (att != null)
-                CanBeInterleaved = true;
+            CanBeInterleaved = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock)) != null;
             Tcs = new TaskCompletionSource<bool>();
         }
 
@@ -80,9 +78,7 @@ namespace ActorModel
         public FuncWrapper(Func<T> work)
         {
             this.Work = work;
-            var att = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock));
-            if (att != null)
-                CanBeInterleaved = true;
+            CanBeInterleaved = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock)) != null;
             this.Tcs = new TaskCompletionSource<T>();
         }
 
@@ -126,9 +122,7 @@ namespace ActorModel
         public ActionAsyncWrapper(Func<Task> work)
         {
             this.Work = work;
-            var att = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock));
-            if (att != null)
-                CanBeInterleaved = true;
+            CanBeInterleaved = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock)) != null;
             Tcs = new TaskCompletionSource<bool>();
         }
 
@@ -170,9 +164,7 @@ namespace ActorModel
         public FuncAsyncWrapper(Func<Task<T>> work)
         {
             this.Work = work;
-            var att = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock));
-            if (att != null)
-                CanBeInterleaved = true;
+            CanBeInterleaved = work.Method.GetCustomAttribute(typeof(InterleaveWhenDeadlock)) != null;
             this.Tcs = new TaskCompletionSource<T>();
         }
 
