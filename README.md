@@ -1,4 +1,3 @@
 # SimpleActor
-A simple actor base on TPL DataFlow that can handle multipath deadlock by call chain reentrancy mechanism!
+A simple actor base on TPL DataFlow that with call chain reentrancy default and can detect multi-callchain deadlock!
 
-![Image text](https://github.com/leeveel/SimpleActor/blob/main/Doc/multipath.png)
